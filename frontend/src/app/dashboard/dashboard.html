@@ -1,0 +1,1043 @@
+<div class="min-h-screen bg-slate-50">
+  <nav class="hidden sm:flex sticky top-0 z-50 bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex-col sm:flex-row sm:justify-between sm:items-center gap-3 shadow-sm">
+    <div class="font-bold text-lg sm:text-xl text-blue-600 flex items-center gap-2">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+      3SV
+    </div>
+    <div class="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
+      @if (isPlatformAdmin()) {
+        <label class="text-sm text-slate-600 flex items-center gap-2 w-full sm:w-auto">
+          <span>Entreprise</span>
+          <select
+            class="border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white w-full sm:w-auto"
+            [value]="selectedEntrepriseId() ?? ''"
+            (change)="onEntrepriseChange($any($event.target).value)">
+            <option value="">— Choisir —</option>
+            @for (e of entreprises(); track e.id) {
+              <option [value]="e.id">{{ e.code }} — {{ e.nom }}</option>
+            }
+          </select>
+        </label>
+      }
+      @if (isAdmin()) {
+        <button type="button" (click)="goToRegister()" class="btn btn-primary w-full sm:w-auto shadow-sm">
+          + Collaborateur
+        </button>
+      }
+      <button type="button" (click)="logout()" class="btn btn-secondary w-full sm:w-auto">Déconnexion</button>
+    </div>
+  </nav>
+
+  <main class="p-4 md:p-6 max-w-7xl mx-auto pb-24 sm:pb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mt-2">
+      <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mb-1">Bienvenue, {{ currentUser()?.name }}</h2>
+      <p class="text-slate-500 text-sm">
+        Rôle : <span class="font-semibold text-blue-600">{{ getRoleName(currentUser()) }}</span>
+        @if (currentUser()?.entreprise) {
+          — Entreprise : <span class="font-semibold text-slate-700">{{ currentUser()?.entreprise?.nom }}</span>
+        }
+      </p>
+
+      <!-- Actions mobile (la barre du haut est masquée sur mobile) -->
+      <div class="sm:hidden mt-4 space-y-2">
+        @if (isPlatformAdmin()) {
+          <label class="text-sm text-slate-600 flex flex-col gap-1">
+            <span>Entreprise</span>
+            <select
+              class="border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white w-full"
+              [value]="selectedEntrepriseId() ?? ''"
+              (change)="onEntrepriseChange($any($event.target).value)">
+              <option value="">— Choisir —</option>
+              @for (e of entreprises(); track e.id) {
+                <option [value]="e.id">{{ e.code }} — {{ e.nom }}</option>
+              }
+            </select>
+          </label>
+        }
+        @if (isAdmin()) {
+          <button type="button" (click)="goToRegister()" class="btn btn-primary w-full shadow-sm">
+            + Collaborateur
+          </button>
+        }
+        <button type="button" (click)="logout()" class="btn btn-secondary w-full">Déconnexion</button>
+      </div>
+    </div>
+
+    @if (successMsg()) {
+      <div class="mt-4 alert alert-success">{{ successMsg() }}</div>
+    }
+    @if (errorMsg()) {
+      <div class="mt-4 alert alert-error">{{ errorMsg() }}</div>
+    }
+
+    @if (isPlatformAdmin() && !selectedEntrepriseId() && activePage() !== 'entreprises') {
+      <div class="mt-4 p-4 rounded-lg bg-amber-50 text-amber-900 text-sm border border-amber-200">
+        Sélectionnez une entreprise pour gérer articles, stock et ventes.
+      </div>
+    }
+
+    <div class="hidden sm:block mt-4 sticky top-[84px] z-40 bg-slate-50 pt-4 pb-2">
+      <div class="flex flex-wrap gap-2">
+      @if (canEditCatalog()) {
+        <button type="button" (click)="setPage('articles')"
+          class="px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors"
+          [class]="activePage() === 'articles' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">
+          Articles &amp; catégories
+        </button>
+      }
+      @if (canManageStock()) {
+        <button type="button" (click)="setPage('stock')"
+          class="px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors"
+          [class]="activePage() === 'stock' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">
+          Entrées stock (livraisons)
+        </button>
+      }
+      @if (canManageStock()) {
+        <button type="button" (click)="setPage('etat')"
+          class="px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors"
+          [class]="activePage() === 'etat' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">
+          Etat financier
+        </button>
+      }
+      @if (canSell()) {
+        <button type="button" (click)="setPage('ventes')"
+          class="px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors"
+          [class]="activePage() === 'ventes' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">
+          Ventes
+        </button>
+      }
+      @if (isAdmin()) {
+        <button type="button" (click)="setPage('users')"
+          class="px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors"
+          [class]="activePage() === 'users' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">
+          Utilisateurs
+        </button>
+      }
+      @if (isPlatformAdmin()) {
+        <button type="button" (click)="setPage('entreprises')"
+          class="px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors"
+          [class]="activePage() === 'entreprises' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">
+          Entreprises
+        </button>
+      }
+      </div>
+    </div>
+
+    <!-- ——— Etat financier ——— -->
+    @if (activePage() === 'etat' && canManageStock()) {
+      <div class="mt-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-slate-800">Etat financier et mouvements d’articles</h3>
+          <button type="button" (click)="loadFinancialState()" class="text-sm border border-slate-300 bg-white text-slate-700 px-3 py-2 rounded-lg hover:bg-slate-50">
+            Actualiser
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          @for (p of ['journalier', 'hebdomadaire', 'mensuel', 'annuel']; track p) {
+            <button type="button" (click)="setFinancialPeriod($any(p))"
+              class="px-3 py-2 rounded-lg text-xs font-medium border transition-colors"
+              [class]="selectedFinancialPeriod() === p ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">
+              {{ getPeriodLabel($any(p)) }}
+            </button>
+          }
+        </div>
+
+        @if (isLoadingFinancialState()) {
+          <div class="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-500">Chargement de l’état financier…</div>
+        } @else if (!financialState()) {
+          <div class="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-500">
+            Aucun indicateur disponible pour le moment.
+          </div>
+        } @else {
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+              <p class="text-xs uppercase tracking-wide text-slate-500">Etat du stock courant</p>
+              <p class="text-sm mt-2 text-slate-700">Références : <span class="font-semibold">{{ financialState()?.etat_stock_courant?.references }}</span></p>
+              <p class="text-sm mt-1 text-slate-700">Quantité totale : <span class="font-semibold">{{ fmtQty(financialState()?.etat_stock_courant?.quantite_totale) }}</span></p>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+              <p class="text-xs uppercase tracking-wide text-slate-500">Lecture rapide</p>
+              <p class="text-sm mt-2 text-slate-700">Ces indicateurs comparent les entrées/sorties d’articles et les montants achats/ventes sur 3 périodes.</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-200 bg-slate-50">
+              <p class="font-semibold text-slate-800">{{ getPeriodLabel(selectedFinancialPeriod()) }}</p>
+              <p class="text-xs text-slate-500">
+                {{ getPeriodData(selectedFinancialPeriod())?.debut }} → {{ getPeriodData(selectedFinancialPeriod())?.fin }}
+              </p>
+            </div>
+            <div class="p-4 space-y-2 text-sm">
+              <p class="text-slate-700">Entrées articles : <span class="font-semibold">{{ fmtQty(getPeriodData(selectedFinancialPeriod())?.entrees_articles_quantite) }}</span></p>
+              <p class="text-slate-700">Sorties articles : <span class="font-semibold">{{ fmtQty(getPeriodData(selectedFinancialPeriod())?.sorties_articles_quantite) }}</span></p>
+              <p class="text-slate-700">Références entrées : <span class="font-semibold">{{ getPeriodData(selectedFinancialPeriod())?.entrees_articles_references }}</span></p>
+              <p class="text-slate-700">Références sorties : <span class="font-semibold">{{ getPeriodData(selectedFinancialPeriod())?.sorties_articles_references }}</span></p>
+              <hr class="my-2 border-slate-200" />
+              <p class="text-slate-700">Achats : <span class="font-semibold tabular-nums">{{ fmtMoney(getPeriodData(selectedFinancialPeriod())?.achats_total) }} FCFA</span></p>
+              <p class="text-slate-700">Ventes : <span class="font-semibold tabular-nums">{{ fmtMoney(getPeriodData(selectedFinancialPeriod())?.ventes_total) }} FCFA</span></p>
+              <p class="text-slate-700">Marge brute estimée :
+                <span class="font-semibold tabular-nums"
+                  [class]="(getPeriodData(selectedFinancialPeriod())?.marge_brute_estimee ?? 0) < 0 ? 'text-red-700' : 'text-green-700'">
+                  {{ fmtMoney(getPeriodData(selectedFinancialPeriod())?.marge_brute_estimee) }} FCFA
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div class="px-4 py-3 border-b border-slate-200 bg-slate-50">
+                <p class="font-semibold text-slate-800">Produits entrés (top)</p>
+                <p class="text-xs text-slate-500">Top 10 par quantité sur la période</p>
+              </div>
+              <div class="p-4">
+                @if ((getPeriodData(selectedFinancialPeriod())?.entrees_articles?.length ?? 0) === 0) {
+                  <div class="text-sm text-slate-500">Aucune entrée sur la période.</div>
+                } @else {
+                  <div class="space-y-2">
+                    @for (row of getPeriodData(selectedFinancialPeriod())?.entrees_articles; track row.article_id) {
+                      <div class="flex items-start justify-between gap-3 border border-slate-200 rounded-lg p-3">
+                        <div class="min-w-0">
+                          <div class="text-xs text-slate-500 font-mono">{{ row.article_code }}</div>
+                          <div class="text-sm font-medium text-slate-900 truncate">{{ row.article_nom }}</div>
+                          <div class="text-xs text-slate-500">{{ fmtQty(row.quantite) }} {{ row.unite_mesure }}</div>
+                        </div>
+                        <div class="text-right shrink-0">
+                          <div class="text-xs text-slate-500">Achats</div>
+                          <div class="text-sm font-semibold tabular-nums">{{ fmtMoney(row.montant) }} FCFA</div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div class="px-4 py-3 border-b border-slate-200 bg-slate-50">
+                <p class="font-semibold text-slate-800">Produits sortis (top)</p>
+                <p class="text-xs text-slate-500">Top 10 par quantité sur la période</p>
+              </div>
+              <div class="p-4">
+                @if ((getPeriodData(selectedFinancialPeriod())?.sorties_articles?.length ?? 0) === 0) {
+                  <div class="text-sm text-slate-500">Aucune sortie sur la période.</div>
+                } @else {
+                  <div class="space-y-2">
+                    @for (row of getPeriodData(selectedFinancialPeriod())?.sorties_articles; track row.article_id) {
+                      <div class="flex items-start justify-between gap-3 border border-slate-200 rounded-lg p-3">
+                        <div class="min-w-0">
+                          <div class="text-xs text-slate-500 font-mono">{{ row.article_code }}</div>
+                          <div class="text-sm font-medium text-slate-900 truncate">{{ row.article_nom }}</div>
+                          <div class="text-xs text-slate-500">{{ fmtQty(row.quantite) }} {{ row.unite_mesure }}</div>
+                        </div>
+                        <div class="text-right shrink-0">
+                          <div class="text-xs text-slate-500">Ventes</div>
+                          <div class="text-sm font-semibold tabular-nums">{{ fmtMoney(row.montant) }} FCFA</div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ——— Articles & catégories ——— -->
+    @if (activePage() === 'articles' && canEditCatalog()) {
+      <div class="mt-6 space-y-6">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+            <button type="button" (click)="toggleCategoriesSection()" class="inline-flex items-center gap-2 text-lg font-semibold text-slate-800">
+              <span>Catégories</span>
+              <svg class="w-4 h-4 text-slate-500 transition-transform" [class]="isCategoriesCollapsed() ? '-rotate-90' : 'rotate-0'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <button type="button" (click)="openCategorieForm()" class="text-sm bg-slate-800 text-white px-3 py-1.5 rounded-lg">+ Catégorie</button>
+          </div>
+          @if (!isCategoriesCollapsed()) {
+            <div class="p-4 border-b border-slate-200 bg-white">
+              <input type="text" [(ngModel)]="categoriesQuery" class="input" placeholder="Rechercher une catégorie (nom, code)…" />
+            </div>
+            <div class="sm:hidden p-4 space-y-3">
+              @for (c of getFilteredCategories(); track c.id) {
+                <div class="rounded-xl border border-slate-200 bg-white p-4">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <div class="text-xs text-slate-500">Code</div>
+                      <div class="font-mono text-sm font-semibold text-slate-800">{{ c.code }}</div>
+                      <div class="text-xs text-slate-500 mt-2">Nom</div>
+                      <div class="text-sm font-medium text-slate-900">{{ c.nom }}</div>
+                    </div>
+                    <div class="flex flex-col gap-2 shrink-0">
+                      <button type="button" (click)="openCategorieForm(c)" class="btn btn-secondary">Modifier</button>
+                      <button type="button" (click)="deleteCategorie(c.id)" class="btn btn-secondary text-red-700 border-red-200 hover:bg-red-50">Supprimer</button>
+                    </div>
+                  </div>
+                </div>
+              }
+              @if (getFilteredCategories().length === 0) {
+                <div class="text-sm text-slate-500">Aucune catégorie.</div>
+              }
+            </div>
+
+            <div class="hidden sm:block overflow-x-auto">
+              <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Code</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Nom</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (c of getFilteredCategories(); track c.id) {
+                    <tr>
+                      <td class="px-4 py-2 font-mono text-slate-700">{{ c.code }}</td>
+                      <td class="px-4 py-2">{{ c.nom }}</td>
+                      <td class="px-4 py-2 text-right space-x-2">
+                        <button type="button" (click)="openCategorieForm(c)" class="text-blue-600 text-xs font-medium">Modifier</button>
+                        <button type="button" (click)="deleteCategorie(c.id)" class="text-red-600 text-xs font-medium">Supprimer</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+            <button type="button" (click)="toggleArticlesSection()" class="inline-flex items-center gap-2 text-lg font-semibold text-slate-800">
+              <span>Articles</span>
+              <svg class="w-4 h-4 text-slate-500 transition-transform" [class]="isArticlesCollapsed() ? '-rotate-90' : 'rotate-0'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <button type="button" (click)="openArticleForm()" class="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg">+ Article</button>
+          </div>
+          @if (!isArticlesCollapsed()) {
+            <div class="p-4 border-b border-slate-200 bg-white">
+              <input type="text" [(ngModel)]="articlesQuery" class="input" placeholder="Rechercher un article (nom, code, catégorie)…" />
+            </div>
+            <div class="sm:hidden p-4 space-y-3">
+              @for (a of getPagedArticles(); track a.id) {
+                <div class="rounded-xl border border-slate-200 bg-white p-4">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs text-slate-500">{{ a.code }}</span>
+                        <span class="text-sm font-semibold text-slate-900 truncate">{{ a.nom }}</span>
+                      </div>
+                      <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <div class="text-xs text-slate-500">Catégorie</div>
+                          <div class="text-slate-700">{{ a.categorie?.nom || '—' }}</div>
+                        </div>
+                        <div>
+                          <div class="text-xs text-slate-500">Unité</div>
+                          <div class="text-slate-700">{{ a.unite_mesure }}</div>
+                        </div>
+                        <div class="col-span-2">
+                          <div class="text-xs text-slate-500">Stock</div>
+                          <div class="font-semibold tabular-nums text-slate-900">{{ fmtQty(a.quantite_stock) }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex flex-col gap-2 shrink-0">
+                      <button type="button" (click)="openArticleForm(a)" class="btn btn-secondary">Modifier</button>
+                      <button type="button" (click)="deleteArticle(a.id)" class="btn btn-secondary text-red-700 border-red-200 hover:bg-red-50">Supprimer</button>
+                    </div>
+                  </div>
+                </div>
+              }
+              @if (getFilteredArticles().length === 0) {
+                <div class="text-sm text-slate-500">Aucun article.</div>
+              }
+            </div>
+
+            <div class="hidden sm:block overflow-x-auto">
+              <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Code</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Nom</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Catégorie</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Unité</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Stock</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (a of getPagedArticles(); track a.id) {
+                    <tr>
+                      <td class="px-4 py-2 font-mono text-slate-700">{{ a.code }}</td>
+                      <td class="px-4 py-2 font-medium">{{ a.nom }}</td>
+                      <td class="px-4 py-2 text-slate-600">{{ a.categorie?.nom }}</td>
+                      <td class="px-4 py-2">{{ a.unite_mesure }}</td>
+                      <td class="px-4 py-2 text-right tabular-nums">{{ fmtQty(a.quantite_stock) }}</td>
+                      <td class="px-4 py-2 text-right space-x-2">
+                        <button type="button" (click)="openArticleForm(a)" class="text-blue-600 text-xs font-medium">Modifier</button>
+                        <button type="button" (click)="deleteArticle(a.id)" class="text-red-600 text-xs font-medium">Supprimer</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="flex items-center justify-between p-4 border-t border-slate-200 text-sm">
+              <div class="text-slate-500">Page {{ articlesPage() }} / {{ getArticlesPageCount() }}</div>
+              <div class="flex gap-2">
+                <button type="button" (click)="goArticlesPage(-1)" [disabled]="articlesPage() <= 1" class="btn btn-secondary disabled:opacity-50">Précédent</button>
+                <button type="button" (click)="goArticlesPage(1)" [disabled]="articlesPage() >= getArticlesPageCount()" class="btn btn-secondary disabled:opacity-50">Suivant</button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ——— Livraisons ——— -->
+    @if (activePage() === 'stock' && canManageStock()) {
+      <div class="mt-6">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+          <h3 class="text-lg font-semibold text-slate-800">Livraisons (entrées de stock)</h3>
+          <div class="flex flex-wrap gap-2">
+            @if (canManageStock() && (!canEditCatalog() || isEntrepriseAdmin())) {
+              <button type="button" (click)="openStockManagerCategorieForm()" class="text-sm border border-slate-300 bg-white text-slate-800 px-3 py-2 rounded-lg hover:bg-slate-50">
+                + Nouvelle catégorie
+              </button>
+              <button type="button" (click)="openStockManagerArticleForm()" class="text-sm bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700">
+                + Nouvel article
+              </button>
+            }
+            <button type="button" (click)="refreshStockView()" class="text-sm border border-slate-300 bg-white text-slate-700 px-3 py-2 rounded-lg hover:bg-slate-50" title="Recharger stock et livraisons depuis le serveur">
+              Actualiser
+            </button>
+            <button type="button" (click)="openLivraisonForm()" class="text-sm bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">+ Nouvelle livraison</button>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <input type="text" [(ngModel)]="livraisonsQuery" class="input" placeholder="Rechercher une livraison (code, fournisseur, date)…" />
+        </div>
+
+        @if (isLoadingPageData()) {
+          <div class="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-500">Chargement…</div>
+        } @else {
+        @if (articles().length === 0 && canManageStock() && (!canEditCatalog() || isEntrepriseAdmin())) {
+          <div class="mb-4 p-3 rounded-lg bg-blue-50 text-blue-900 text-sm border border-blue-200">
+            Commencez par <strong>Nouvelle catégorie</strong> si besoin, puis <strong>Nouvel article</strong> pour enregistrer chaque produit. Ensuite ouvrez <strong>Nouvelle livraison</strong> pour saisir le fournisseur et les quantités reçues.
+            @if (isEntrepriseAdmin()) {
+              <span class="block mt-2">Vous pouvez aussi utiliser l’onglet <strong>Articles &amp; catégories</strong> pour le catalogue.</span>
+            }
+          </div>
+        }
+        @if (canManageStock() && (!canEditCatalog() || isEntrepriseAdmin()) && articles().length > 0) {
+          <p class="text-xs text-slate-500 mb-3">Si un collègue enregistre une vente pendant que cette page est ouverte, cliquez sur <strong>Actualiser</strong> pour voir le stock à jour (ou revenez sur l’onglet après avoir changé de fenêtre).</p>
+        }
+        <div class="space-y-4">
+          @for (l of getPagedLivraisons(); track l.id) {
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-4 text-sm">
+                <span><span class="text-slate-500">Code</span> <span class="font-mono font-semibold">{{ l.code }}</span></span>
+                <span><span class="text-slate-500">Date</span> {{ l.date_livraison }}</span>
+                <span><span class="text-slate-500">Fournisseur</span> {{ l.fournisseur_nom }} @if (l.fournisseur_contact) { · {{ l.fournisseur_contact }} }</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead>
+                    <tr class="text-left text-xs text-slate-500 border-b border-slate-100">
+                      <th class="px-4 py-2">Article</th>
+                      <th class="px-4 py-2">Quantité reçue</th>
+                      <th class="px-4 py-2">Unité</th>
+                      <th class="px-4 py-2">Prix d’achat / unité</th>
+                      <th class="px-4 py-2">Prix de vente / unité</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (d of l.details; track d.id) {
+                      <tr class="border-t border-slate-50">
+                        <td class="px-4 py-2"><span class="font-mono text-xs text-slate-500">{{ d.article?.code }}</span> {{ d.article?.nom }}</td>
+                        <td class="px-4 py-2 tabular-nums">{{ fmtQty(d.quantite) }}</td>
+                        <td class="px-4 py-2">{{ d.unite_mesure }}</td>
+                        <td class="px-4 py-2 tabular-nums">{{ fmtMoney(d.prix_achat_unitaire) }}</td>
+                        <td class="px-4 py-2 tabular-nums">{{ fmtMoney(d.prix_vente_unitaire) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+          @if (getFilteredLivraisons().length === 0) {
+            <div class="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-500">Aucune livraison.</div>
+          }
+        </div>
+
+        <div class="flex items-center justify-between mt-4 p-4 bg-white rounded-xl border border-slate-200 text-sm">
+          <div class="text-slate-500">Page {{ livraisonsPage() }} / {{ getLivraisonsPageCount() }}</div>
+          <div class="flex gap-2">
+            <button type="button" (click)="goLivraisonsPage(-1)" [disabled]="livraisonsPage() <= 1" class="btn btn-secondary disabled:opacity-50">Précédent</button>
+            <button type="button" (click)="goLivraisonsPage(1)" [disabled]="livraisonsPage() >= getLivraisonsPageCount()" class="btn btn-secondary disabled:opacity-50">Suivant</button>
+          </div>
+        </div>
+        }
+      </div>
+    }
+
+    <!-- ——— Ventes ——— -->
+    @if (activePage() === 'ventes' && canSell()) {
+      <div class="mt-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-slate-800">Ventes</h3>
+          <button type="button" (click)="openVenteForm()" class="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg">+ Nouvelle vente</button>
+        </div>
+
+        <div class="mb-4">
+          <input type="text" [(ngModel)]="ventesQuery" class="input" placeholder="Rechercher une vente (code, client, date, statut)…" />
+        </div>
+
+        @if (isLoadingPageData()) {
+          <div class="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-500">Chargement…</div>
+        } @else {
+          <div class="space-y-4">
+            @for (v of getPagedVentes(); track v.id) {
+              <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-4 justify-between items-start text-sm">
+                  <div class="flex flex-wrap gap-4">
+                    <span><span class="text-slate-500">Code</span> <span class="font-mono font-semibold">{{ v.code }}</span></span>
+                    <span><span class="text-slate-500">Date</span> {{ v.date_vente }}</span>
+                    <span><span class="text-slate-500">Client</span> {{ v.client_nom || '—' }} @if (v.client_contact) { · {{ v.client_contact }} }</span>
+                    <span><span class="text-slate-500">Total</span> <span class="tabular-nums">{{ fmtMoney(v.montant_total) }}</span></span>
+                    <span class="px-2 py-0.5 rounded text-xs font-medium"
+                      [class]="v.statut === 'annulee' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'">
+                      {{ v.statut === 'annulee' ? 'Annulée' : 'Validée' }}
+                    </span>
+                  </div>
+                  @if (isAdmin() && v.statut !== 'annulee') {
+                    <button type="button" (click)="annulerVente(v.id)" class="text-xs text-red-700 border border-red-200 px-2 py-1 rounded-lg hover:bg-red-50">
+                      Annuler (corriger écriture)
+                    </button>
+                  }
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full text-sm">
+                    <thead>
+                      <tr class="text-left text-xs text-slate-500 border-b border-slate-100">
+                        <th class="px-4 py-2">Article</th>
+                        <th class="px-4 py-2">Quantité vendue</th>
+                        <th class="px-4 py-2">Unité</th>
+                        <th class="px-4 py-2">Prix de vente / unité</th>
+                        <th class="px-4 py-2">Remise / unité</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (d of v.details; track d.id) {
+                        <tr class="border-t border-slate-50">
+                          <td class="px-4 py-2"><span class="font-mono text-xs text-slate-500">{{ d.article?.code }}</span> {{ d.article?.nom }}</td>
+                          <td class="px-4 py-2 tabular-nums">{{ fmtQty(d.quantite) }}</td>
+                          <td class="px-4 py-2">{{ d.unite_mesure }}</td>
+                          <td class="px-4 py-2 tabular-nums">{{ fmtMoney(d.prix_vente_unitaire) }}</td>
+                          <td class="px-4 py-2 tabular-nums">{{ fmtMoney(d.remise) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+
+            @if (getFilteredVentes().length === 0) {
+              <div class="bg-white rounded-xl border border-slate-200 p-6 text-sm text-slate-500">Aucune vente.</div>
+            }
+          </div>
+
+          <div class="flex items-center justify-between mt-4 p-4 bg-white rounded-xl border border-slate-200 text-sm">
+            <div class="text-slate-500">Page {{ ventesPage() }} / {{ getVentesPageCount() }}</div>
+            <div class="flex gap-2">
+              <button type="button" (click)="goVentesPage(-1)" [disabled]="ventesPage() <= 1" class="btn btn-secondary disabled:opacity-50">Précédent</button>
+              <button type="button" (click)="goVentesPage(1)" [disabled]="ventesPage() >= getVentesPageCount()" class="btn btn-secondary disabled:opacity-50">Suivant</button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ——— Utilisateurs ——— -->
+    @if (activePage() === 'users' && isAdmin()) {
+      <div class="mt-6 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+          <h3 class="text-lg font-semibold text-slate-800">Utilisateurs</h3>
+          <span class="text-sm text-slate-400">{{ users().length }} utilisateur(s)</span>
+        </div>
+        <div class="sm:hidden p-4 space-y-3">
+          @for (user of users(); track user.id) {
+            <div class="rounded-xl border border-slate-200 bg-white p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="text-sm font-semibold text-slate-900 truncate">{{ user.name }}</div>
+                  <div class="text-xs text-slate-500 truncate">{{ user.email }}</div>
+                  <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <div class="text-xs text-slate-500">Rôle</div>
+                      <div class="text-slate-700">{{ getRoleName(user) }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-slate-500">Statut</div>
+                      <div [class]="user.statut ? 'text-green-700 font-medium' : 'text-red-700 font-medium'">
+                        {{ user.statut ? 'Actif' : 'Désactivé' }}
+                      </div>
+                    </div>
+                    <div class="col-span-2">
+                      <div class="text-xs text-slate-500">Entreprise</div>
+                      <div class="text-slate-700">{{ user.entreprise?.nom || '—' }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-2 shrink-0">
+                  @if (user.id !== currentUser()?.id) {
+                    <button type="button" (click)="editUser(user.id)" class="btn btn-secondary">Modifier</button>
+                    <button type="button" (click)="toggleStatut(user.id)" class="btn btn-secondary">
+                      {{ user.statut ? 'Désactiver' : 'Activer' }}
+                    </button>
+                  } @else {
+                    <span class="text-xs text-slate-400">Vous</span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+          @if (users().length === 0) {
+            <div class="text-sm text-slate-500">Aucun utilisateur.</div>
+          }
+        </div>
+
+        <div class="hidden sm:block overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Utilisateur</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Rôle</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Entreprise</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Statut</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              @for (user of users(); track user.id) {
+                <tr class="hover:bg-slate-50">
+                  <td class="px-6 py-4">
+                    <div class="font-medium text-slate-900">{{ user.name }}</div>
+                    <div class="text-slate-500 text-xs">{{ user.email }}</div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="px-2 py-1 text-xs rounded-full font-medium"
+                      [class]="user.roles?.[0]?.name === 'administrateur_plateforme' ? 'bg-purple-100 text-purple-800' :
+                               user.roles?.[0]?.name === 'administrateur_entreprise' ? 'bg-blue-100 text-blue-800' :
+                               user.roles?.[0]?.name === 'gestionnaire_stock' ? 'bg-amber-100 text-amber-800' :
+                               'bg-slate-100 text-slate-800'">
+                      {{ getRoleName(user) }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-slate-600">{{ user.entreprise?.nom || '—' }}</td>
+                  <td class="px-6 py-4">
+                    @if (user.statut) {
+                      <span class="text-xs font-medium text-green-700">Actif</span>
+                    } @else {
+                      <span class="text-xs font-medium text-red-700">Désactivé</span>
+                    }
+                  </td>
+                  <td class="px-6 py-4">
+                    @if (user.id !== currentUser()?.id) {
+                      <div class="flex gap-2">
+                        <button type="button" (click)="editUser(user.id)" class="text-xs text-blue-600 font-medium">Modifier</button>
+                        <button type="button" (click)="toggleStatut(user.id)" class="text-xs text-slate-600 font-medium">{{ user.statut ? 'Désactiver' : 'Activer' }}</button>
+                      </div>
+                    } @else {
+                      <span class="text-xs text-slate-400">Vous</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- ——— Entreprises (plateforme) ——— -->
+    @if (activePage() === 'entreprises' && isPlatformAdmin()) {
+      <div class="mt-6 bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h3 class="text-lg font-semibold text-slate-800">Entreprises</h3>
+          <p class="text-xs text-slate-500 mt-1">Code entreprise, raison sociale, nom logique de la base de données</p>
+        </div>
+        <div class="sm:hidden p-4 space-y-3">
+          @for (e of entreprises(); track e.id) {
+            <div class="rounded-xl border border-slate-200 bg-white p-4">
+              <div class="text-xs text-slate-500">Code</div>
+              <div class="font-mono text-sm font-semibold text-slate-800">{{ e.code }}</div>
+              <div class="mt-3 text-xs text-slate-500">Nom</div>
+              <div class="text-sm font-medium text-slate-900">{{ e.nom }}</div>
+              <div class="mt-3 text-xs text-slate-500">Base de données</div>
+              <div class="text-sm text-slate-700">{{ e.nom_base_donnee || '—' }}</div>
+            </div>
+          }
+          @if (entreprises().length === 0) {
+            <div class="text-sm text-slate-500">Aucune entreprise.</div>
+          }
+        </div>
+
+        <div class="hidden sm:block overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Code</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Nom</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Base de données</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (e of entreprises(); track e.id) {
+                <tr>
+                  <td class="px-4 py-2 font-mono">{{ e.code }}</td>
+                  <td class="px-4 py-2 font-medium">{{ e.nom }}</td>
+                  <td class="px-4 py-2 text-slate-600">{{ e.nom_base_donnee || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  </main>
+
+  <!-- Navigation mobile (barre en bas) -->
+  <div class="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 px-2 py-2">
+    <div class="grid grid-flow-col auto-cols-fr gap-2">
+      @if (canEditCatalog()) {
+        <button type="button" (click)="setPage('articles')"
+          class="btn px-2 py-2 text-xs border"
+          [class]="activePage() === 'articles' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200'">
+          Articles
+        </button>
+      }
+      @if (canManageStock()) {
+        <button type="button" (click)="setPage('stock')"
+          class="btn px-2 py-2 text-xs border"
+          [class]="activePage() === 'stock' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200'">
+          Stock
+        </button>
+      }
+      @if (canManageStock()) {
+        <button type="button" (click)="setPage('etat')"
+          class="btn px-2 py-2 text-xs border"
+          [class]="activePage() === 'etat' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200'">
+          Etat
+        </button>
+      }
+      @if (canSell()) {
+        <button type="button" (click)="setPage('ventes')"
+          class="btn px-2 py-2 text-xs border"
+          [class]="activePage() === 'ventes' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200'">
+          Ventes
+        </button>
+      }
+      @if (isAdmin()) {
+        <button type="button" (click)="setPage('users')"
+          class="btn px-2 py-2 text-xs border"
+          [class]="activePage() === 'users' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200'">
+          Users
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Modales -->
+  @if (showCategorieForm()) {
+    <div class="modal-backdrop" (click)="showCategorieForm.set(false)" role="button" tabindex="0" (keydown.enter)="showCategorieForm.set(false)" (keydown.space)="showCategorieForm.set(false)">
+      <div class="modal modal-sm" (click)="$event.stopPropagation()" role="button" tabindex="0" (keydown.enter)="showCategorieForm.set(false)" (keydown.space)="showCategorieForm.set(false)">
+        <div class="modal-body">
+        <h4 class="font-semibold text-lg mb-4">{{ editingCategorie() ? 'Modifier' : 'Nouvelle' }} catégorie</h4>
+        <div class="space-y-3">
+          <div>
+            <label for="categorie-code" class="block text-xs font-medium text-slate-600 mb-1">Code (optionnel, généré si vide)</label>
+            <input id="categorie-code" type="text" [(ngModel)]="categorieForm.code" class="input" placeholder="CAT-00001" />
+          </div>
+          <div>
+            <label for="categorie-nom" class="block text-xs font-medium text-slate-600 mb-1">Nom de la catégorie</label>
+            <input id="categorie-nom" type="text" [(ngModel)]="categorieForm.nom" class="input" />
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-2">
+          <button type="button" (click)="showCategorieForm.set(false)" class="btn btn-secondary">Annuler</button>
+          <button type="button" (click)="saveCategorie()" class="btn btn-primary">Enregistrer</button>
+        </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (showArticleForm()) {
+    <div class="modal-backdrop" (click)="showArticleForm.set(false)" role="button" tabindex="0" (keydown.enter)="showArticleForm.set(false)" (keydown.space)="showArticleForm.set(false)">
+      <div class="modal modal-sm" (click)="$event.stopPropagation()" role="button" tabindex="0" (keydown.enter)="showArticleForm.set(false)" (keydown.space)="showArticleForm.set(false)">
+        <div class="modal-body">
+        <h4 class="font-semibold text-lg mb-1">{{ editingArticle() ? 'Modifier' : 'Nouvel' }} article</h4>
+        @if (!canEditCatalog() && !editingArticle()) {
+          <p class="text-xs text-slate-500 mb-4">Les articles sont créés ici, séparément des livraisons. Il faut au moins une <strong>catégorie</strong> : utilisez « Nouvelle catégorie » sur l’onglet Entrées stock si la liste est vide.</p>
+        }
+        @if (isEntrepriseAdmin() && !isPlatformAdmin() && !editingArticle()) {
+          <p class="text-xs text-slate-500 mb-4">Création séparée des livraisons : utilisez <strong>Nouvelle catégorie</strong> / <strong>Nouvel article</strong> sur l’onglet Entrées stock, ou gérez tout depuis <strong>Articles &amp; catégories</strong>.</p>
+        }
+        <div class="space-y-3">
+          <div>
+            <label for="article-code" class="block text-xs font-medium text-slate-600 mb-1">Code (optionnel)</label>
+            <input id="article-code" type="text" [(ngModel)]="articleForm.code" class="input" />
+          </div>
+          <div>
+            <label for="article-nom" class="block text-xs font-medium text-slate-600 mb-1">Nom</label>
+            <input id="article-nom" type="text" [(ngModel)]="articleForm.nom" class="input" />
+          </div>
+          <div>
+            <label for="article-unite" class="block text-xs font-medium text-slate-600 mb-1">Unité de mesure</label>
+            <input id="article-unite" type="text" [(ngModel)]="articleForm.unite_mesure" class="input" placeholder="kg, pièce…" />
+          </div>
+          <div>
+            <label for="article-categorie" class="block text-xs font-medium text-slate-600 mb-1">Catégorie</label>
+            <select id="article-categorie" [(ngModel)]="articleForm.categorie_id" class="input">
+              <option [ngValue]="null">—</option>
+              @for (c of categories(); track c.id) {
+                <option [ngValue]="c.id">{{ c.code }} — {{ c.nom }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-2">
+          <button type="button" (click)="showArticleForm.set(false)" class="btn btn-secondary">Annuler</button>
+          <button type="button" (click)="saveArticle()" [disabled]="!articleForm.nom || !articleForm.unite_mesure || !articleForm.categorie_id" class="btn btn-primary disabled:opacity-50">Enregistrer</button>
+        </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (showLivraisonForm()) {
+    <div class="modal-backdrop" (click)="showLivraisonForm.set(false)" role="button" tabindex="0" (keydown.enter)="showLivraisonForm.set(false)" (keydown.space)="showLivraisonForm.set(false)">
+      <div class="modal modal-md" (click)="$event.stopPropagation()" role="button" tabindex="0" (keydown.enter)="showLivraisonForm.set(false)" (keydown.space)="showLivraisonForm.set(false)">
+        <div class="modal-body">
+        <h4 class="font-semibold text-lg mb-2">Nouvelle livraison</h4>
+        @if (isPlatformAdmin()) {
+          <p class="text-sm text-slate-600 mb-4">
+            Choisissez les <strong>articles du catalogue</strong> dans chaque ligne. Vous pouvez aussi en ajouter un rapidement ci-dessous sans quitter cette fenêtre.
+          </p>
+        } @else {
+          <p class="text-sm text-slate-600 mb-4">
+            Sélectionnez les articles déjà créés dans le catalogue. Pour un nouveau produit ou une catégorie, utilisez <strong>Nouvel article</strong> / <strong>Nouvelle catégorie</strong> sur l’onglet <strong>Entrées stock</strong> (ou l’onglet Articles &amp; catégories si vous êtes admin entreprise), puis revenez ici.
+          </p>
+        }
+
+        @if (livraisonModalError()) {
+          <div class="mb-4 alert alert-error">{{ livraisonModalError() }}</div>
+        }
+
+        @if (isPlatformAdmin()) {
+          <div class="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+            <p class="text-xs font-semibold text-slate-700 uppercase tracking-wide">Création rapide (catalogue)</p>
+            <div class="flex flex-wrap gap-2 items-end">
+              <div class="flex-1 min-w-[160px]">
+                <label for="livraison-quick-categorie" class="block text-xs text-slate-600 mb-1">Nouvelle catégorie (si besoin)</label>
+                <input id="livraison-quick-categorie" type="text" [(ngModel)]="livraisonQuickCategorieNom" class="input" placeholder="ex. Quincaillerie" />
+              </div>
+              <button type="button" (click)="addCategorieFromLivraisonModal()" class="btn btn-secondary shrink-0">Créer catégorie</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label for="livraison-quick-article-nom" class="block text-xs text-slate-600 mb-1">Nom de l’article</label>
+                <input id="livraison-quick-article-nom" type="text" [(ngModel)]="livraisonQuickArticle.nom" class="input" placeholder="ex. Paquet de pointes 500g" />
+              </div>
+              <div>
+                <label for="livraison-quick-article-unite" class="block text-xs text-slate-600 mb-1">Unité de mesure</label>
+                <input id="livraison-quick-article-unite" type="text" [(ngModel)]="livraisonQuickArticle.unite_mesure" class="input" placeholder="pièce, paquet, rouleau…" />
+              </div>
+              <div class="sm:col-span-2">
+                <label for="livraison-quick-article-categorie" class="block text-xs text-slate-600 mb-1">Catégorie</label>
+                <select id="livraison-quick-article-categorie" [(ngModel)]="livraisonQuickArticle.categorie_id" class="input">
+                  <option [ngValue]="null">— Choisir une catégorie —</option>
+                  @for (c of categories(); track c.id) {
+                    <option [ngValue]="c.id">{{ c.nom }} ({{ c.code }})</option>
+                  }
+                </select>
+              </div>
+            </div>
+            <button type="button" (click)="addArticleFromLivraisonModal()" class="w-full sm:w-auto btn btn-primary">
+              Ajouter au catalogue &amp; préparer la ligne
+            </button>
+          </div>
+        }
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div>
+            <label for="livraison-date" class="block text-xs font-medium text-slate-600 mb-1">Date</label>
+            <input id="livraison-date" type="date" [(ngModel)]="livraisonForm.date_livraison" class="input" />
+          </div>
+          <div>
+            <label for="livraison-fournisseur-nom" class="block text-xs font-medium text-slate-600 mb-1">Fournisseur (nom) *</label>
+            <input id="livraison-fournisseur-nom" type="text" [(ngModel)]="livraisonForm.fournisseur_nom" class="input" />
+          </div>
+          <div class="md:col-span-2">
+            <label for="livraison-fournisseur-contact" class="block text-xs font-medium text-slate-600 mb-1">Contact fournisseur</label>
+            <input id="livraison-fournisseur-contact" type="text" [(ngModel)]="livraisonForm.fournisseur_contact" class="input" />
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 mb-3">Pour chaque ligne : article reçu, <strong>quantité</strong> entrée en stock, <strong>prix payé au fournisseur pour 1 unité</strong>, <strong>prix de vente prévu pour 1 unité</strong> (en FCFA, point ou virgule acceptés à la saisie).</p>
+        @for (line of livraisonForm.details; track $index) {
+          <div class="border border-slate-200 rounded-lg p-3 mb-3 bg-slate-50/80 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-semibold text-slate-700">Ligne {{ $index + 1 }}</span>
+              @if (livraisonForm.details.length > 1) {
+                <button type="button" (click)="removeLivraisonLine($index)" class="text-red-600 text-xs font-medium">Supprimer la ligne</button>
+              }
+            </div>
+            <div>
+              <label for="livraison-line-article" class="block text-xs font-medium text-slate-700 mb-1">Article livré</label>
+              <select id="livraison-line-article" [(ngModel)]="line.article_id" class="input">
+                <option [ngValue]="null">— Choisir l’article —</option>
+                @for (a of articles(); track a.id) {
+                  <option [ngValue]="a.id">{{ a.nom }} — stock actuel {{ fmtQty(a.quantite_stock) }} {{ a.unite_mesure }}</option>
+                }
+              </select>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label for="livraison-line-quantite" class="block text-xs font-medium text-slate-700 mb-1">Quantité reçue</label>
+                <input id="livraison-line-quantite" type="number" [(ngModel)]="line.quantite" min="0.01" step="any" class="input" placeholder="ex. 10" />
+                <p class="text-[11px] text-slate-500 mt-0.5">Nombre d’unités ajoutées au stock</p>
+              </div>
+              <div>
+                <label for="livraison-line-prix-achat" class="block text-xs font-medium text-slate-700 mb-1">Prix d’achat unitaire</label>
+                <input id="livraison-line-prix-achat" type="number" [(ngModel)]="line.prix_achat_unitaire" min="0" step="0.01" class="input" placeholder="ex. 2,50" />
+                <p class="text-[11px] text-slate-500 mt-0.5">Ce que vous payez le fournisseur pour <strong>1</strong> unité (FCFA)</p>
+              </div>
+              <div>
+                <label for="livraison-line-prix-vente" class="block text-xs font-medium text-slate-700 mb-1">Prix de vente unitaire</label>
+                <input id="livraison-line-prix-vente" type="number" [(ngModel)]="line.prix_vente_unitaire" min="0" step="0.01" class="input" placeholder="ex. 4,00" />
+                <p class="text-[11px] text-slate-500 mt-0.5">Prix catalogue pour <strong>1</strong> unité (FCFA)</p>
+              </div>
+            </div>
+            <div class="flex justify-end text-xs text-slate-600">
+              <span class="font-medium">Sous-total achat</span>
+              <span class="ml-2 tabular-nums">{{ fmtMoney((line.quantite || 0) * (line.prix_achat_unitaire || 0)) }} FCFA</span>
+              <span class="ml-4 font-medium">Sous-total vente</span>
+              <span class="ml-2 tabular-nums">{{ fmtMoney((line.quantite || 0) * (line.prix_vente_unitaire || 0)) }} FCFA</span>
+            </div>
+          </div>
+        }
+        <button type="button" (click)="addLivraisonLine()" class="text-sm text-blue-600 mb-4">+ Ligne</button>
+        <div class="flex flex-col sm:flex-row sm:justify-end gap-2 mb-4 text-sm">
+          <div class="bg-white border border-slate-200 rounded-lg px-3 py-2">
+            <span class="text-slate-500">Total achat</span>
+            <span class="ml-2 font-semibold tabular-nums">{{ fmtMoney(getLivraisonTotals().totalAchat) }} FCFA</span>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-lg px-3 py-2">
+            <span class="text-slate-500">Total vente</span>
+            <span class="ml-2 font-semibold tabular-nums">{{ fmtMoney(getLivraisonTotals().totalVente) }} FCFA</span>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-lg px-3 py-2">
+            <span class="text-slate-500">Marge</span>
+            <span class="ml-2 font-semibold tabular-nums" [class]="getLivraisonTotals().marge < 0 ? 'text-red-700' : 'text-emerald-700'">{{ fmtMoney(getLivraisonTotals().marge) }} FCFA</span>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" (click)="showLivraisonForm.set(false)" class="btn btn-secondary">Annuler</button>
+          <button type="button" (click)="saveLivraison()" [disabled]="isSavingLivraison()" class="btn btn-success disabled:opacity-50">{{ isSavingLivraison() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+        </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (showVenteForm()) {
+    <div class="modal-backdrop" (click)="showVenteForm.set(false)" role="button" tabindex="0" (keydown.enter)="showVenteForm.set(false)" (keydown.space)="showVenteForm.set(false)">
+      <div class="modal modal-md" (click)="$event.stopPropagation()" role="button" tabindex="0" (keydown.enter)="showVenteForm.set(false)" (keydown.space)="showVenteForm.set(false)">
+        <div class="modal-body">
+        <h4 class="font-semibold text-lg mb-2">Nouvelle vente</h4>
+        <p class="text-sm text-slate-600 mb-4">Le stock est diminué automatiquement pour les quantités vendues. Les montants sont en <strong>FCFA</strong>.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div>
+            <label for="vente-date" class="block text-xs font-medium text-slate-600 mb-1">Date</label>
+            <input id="vente-date" type="date" [(ngModel)]="venteForm.date_vente" class="input" />
+          </div>
+          <div>
+            <label for="vente-client" class="block text-xs font-medium text-slate-600 mb-1">Client (nom) *</label>
+            <input id="vente-client" type="text" [(ngModel)]="venteForm.client_nom" class="input" required />
+          </div>
+          <div class="md:col-span-2">
+            <label for="vente-contact" class="block text-xs font-medium text-slate-600 mb-1">Contact client</label>
+            <input id="vente-contact" type="text" [(ngModel)]="venteForm.client_contact" class="input" />
+          </div>
+        </div>
+        <p class="text-xs font-medium text-slate-700 mb-2">Total estimé : <span class="tabular-nums">{{ fmtMoney(getVenteMontantTotal()) }}</span> FCFA</p>
+        <p class="text-xs text-slate-500 mb-3">Chaque ligne : combien vous vendez, à quel prix l’unité, et la remise <strong>par unité</strong> (pas sur le total de la ligne).</p>
+        @for (line of venteForm.details; track $index) {
+          <div class="border border-slate-200 rounded-lg p-3 mb-3 bg-slate-50/80 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-semibold text-slate-700">Ligne {{ $index + 1 }}</span>
+              @if (venteForm.details.length > 1) {
+                <button type="button" (click)="removeVenteLine($index)" class="text-red-600 text-xs font-medium">Supprimer la ligne</button>
+              }
+            </div>
+            <div>
+              <label for="vente-line-article" class="block text-xs font-medium text-slate-700 mb-1">Article vendu</label>
+              <select id="vente-line-article" [(ngModel)]="line.article_id" (change)="onVenteArticleChange(line)" class="input">
+                <option [ngValue]="null">— Choisir l’article —</option>
+                @for (a of articles(); track a.id) {
+                  <option [ngValue]="a.id">{{ a.nom }} — stock {{ fmtQty(a.quantite_stock) }} {{ a.unite_mesure }}</option>
+                }
+              </select>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label for="vente-line-quantite" class="block text-xs font-medium text-slate-700 mb-1">Quantité vendue</label>
+                <input id="vente-line-quantite" type="number" [(ngModel)]="line.quantite" min="0.01" step="any" class="input" placeholder="ex. 5" />
+                <p class="text-[11px] text-slate-500 mt-0.5">Unités sortant du stock</p>
+              </div>
+              <div>
+                <label for="vente-line-prix" class="block text-xs font-medium text-slate-700 mb-1">Prix de vente unitaire</label>
+                <input id="vente-line-prix" type="number" [(ngModel)]="line.prix_vente_unitaire" min="0" step="0.01" class="input" placeholder="ex. 10" />
+                <p class="text-[11px] text-slate-500 mt-0.5">Prix pour <strong>1</strong> unité avant remise (FCFA)</p>
+              </div>
+              <div>
+                <label for="vente-line-remise" class="block text-xs font-medium text-slate-700 mb-1">Remise par unité</label>
+                <input id="vente-line-remise" type="number" [(ngModel)]="line.remise" min="0" step="0.01" class="input" placeholder="0" />
+                <p class="text-[11px] text-slate-500 mt-0.5">Réduction en FCFA sur <strong>chaque</strong> unité (0 si aucune)</p>
+              </div>
+            </div>
+            @if (line.article_id) {
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-500">Stock actuel : <span class="font-semibold tabular-nums">{{ fmtQty(getArticleStock(line.article_id)) }}</span></span>
+                <span [class]="getVenteLineRemainingStock(line) < 0 ? 'text-red-700 font-semibold' : 'text-slate-600'">
+                  Restant : <span class="tabular-nums">{{ fmtQty(getVenteLineRemainingStock(line)) }}</span>
+                </span>
+              </div>
+            }
+          </div>
+        }
+        <button type="button" (click)="addVenteLine()" class="text-sm text-blue-600 mb-4">+ Ligne</button>
+        <div class="flex justify-end gap-2">
+          <button type="button" (click)="showVenteForm.set(false)" class="btn btn-secondary">Annuler</button>
+          <button type="button" (click)="saveVente()" [disabled]="!venteForm.client_nom?.trim() || isSavingVente()" class="btn btn-primary disabled:opacity-50">{{ isSavingVente() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+        </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,80 @@
+<div class="page-center">
+  <div class="w-full max-w-lg card card-body relative">
+    <button (click)="goBack()" class="absolute top-4 left-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+    </button>
+
+    <div class="text-center mb-8 mt-2">
+      <h1 class="text-2xl font-bold text-slate-900 mb-2">Modifier l'utilisateur</h1>
+      <p class="text-slate-500 text-sm">Modifiez les informations du compte</p>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="mb-6 alert alert-error text-center">
+        {{ errorMessage() }}
+      </div>
+    }
+
+    @if (successMessage()) {
+      <div class="mb-6 alert alert-success text-center">
+        {{ successMessage() }}
+      </div>
+    }
+
+    @if (!profileLoaded()) {
+      <div class="text-center py-8 text-slate-400">Chargement...</div>
+    } @else {
+      <form [formGroup]="editForm" (ngSubmit)="onSubmit()" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="edit-name" class="label">Nom complet</label>
+            <input type="text" id="edit-name" formControlName="name" class="input">
+          </div>
+          <div>
+            <label for="edit-username" class="label">Nom d'utilisateur</label>
+            <input type="text" id="edit-username" formControlName="username" class="input">
+          </div>
+        </div>
+
+        <div>
+          <label for="edit-email" class="label">Email</label>
+          <input type="email" id="edit-email" formControlName="email" class="input">
+        </div>
+
+        <div>
+          <label for="edit-password" class="label">Mot de passe <span class="text-slate-400 font-normal">(laisser vide pour ne pas changer)</span></label>
+          <input type="password" id="edit-password" formControlName="password" placeholder="••••••••" class="input">
+        </div>
+
+        <div>
+          <label for="edit-role" class="label">Rôle</label>
+          <select id="edit-role" formControlName="role" class="input">
+            @if (isPlatformAdmin()) {
+              <option value="administrateur_plateforme">Admin Plateforme</option>
+              <option value="administrateur_entreprise">Administrateur Entreprise</option>
+            }
+            <option value="gestionnaire_stock">Gestionnaire de Stock</option>
+            <option value="vendeur">Vendeur</option>
+          </select>
+        </div>
+
+        @if (isPlatformAdmin()) {
+          <div>
+            <label for="edit-entreprise" class="label">Nom de l'entreprise</label>
+            <input type="text" id="edit-entreprise" formControlName="entreprise_nom" placeholder="Ex: Entreprise ABC" class="input">
+            <p class="hint">Si l'entreprise n'existe pas, elle sera créée automatiquement.</p>
+          </div>
+        }
+
+        <button type="submit" [disabled]="editForm.invalid || isLoading()" class="w-full mt-6 btn btn-primary shadow disabled:opacity-50 disabled:cursor-not-allowed">
+          @if (isLoading()) {
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              Mise à jour...
+          } @else {
+            Enregistrer les modifications
+          }
+        </button>
+      </form>
+    }
+  </div>
+</div>
